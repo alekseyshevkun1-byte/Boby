@@ -39,7 +39,7 @@ const HIGHLIGHTS: { box: [number, number, number, number]; t0: number; t1: numbe
   { box: [0.03, 0.626, 0.5, 0.666], t0: 11.75, t1: 14.2 },
   { box: [0.035, 0.668, 0.59, 0.709], t0: 15.1, t1: 18.2 },
   { box: [0.04, 0.84, 0.485, 0.9], t0: 18.55, t1: 20.3 },
-  { box: [0.27, 0.066, 0.6, 0.117], t0: 20.3, t1: 22.3 },
+  { box: [0.27, 0.066, 0.6, 0.117], t0: 20.3, t1: 21.9 },
 ];
 // camera: scale and focus point on the screen (ratios)
 const CAM: { t: number; s: number; fx: number; fy: number }[] = [
@@ -49,7 +49,8 @@ const CAM: { t: number; s: number; fx: number; fy: number }[] = [
   { t: 11.2, s: 1.4, fx: 0.27, fy: 0.655 }, { t: 14.1, s: 1.4, fx: 0.27, fy: 0.655 },
   { t: 14.7, s: 1.4, fx: 0.32, fy: 0.69 }, { t: 18.1, s: 1.4, fx: 0.32, fy: 0.69 },
   { t: 18.55, s: 1.4, fx: 0.27, fy: 0.865 }, { t: 20.0, s: 1.4, fx: 0.27, fy: 0.865 },
-  { t: 20.5, s: 1.3, fx: 0.43, fy: 0.12 }, { t: 22.5, s: 1.3, fx: 0.43, fy: 0.12 },
+  { t: 20.5, s: 1.3, fx: 0.43, fy: 0.12 }, { t: 21.7, s: 1.3, fx: 0.43, fy: 0.12 },
+  { t: 22.4, s: 1, fx: 0.5, fy: 0.5 }, { t: 22.5, s: 1, fx: 0.5, fy: 0.5 },
 ];
 const SMAX = 1.4;
 
@@ -92,7 +93,7 @@ const Dot: React.FC<{ c: string; border?: boolean }> = ({ c, border }) => (
 const Headlines: React.FC = () => {
   const frame = useCurrentFrame();
   const sp = interpolate(frame, [f(20.2), f(20.2) + 28], [0.7, 0.3], { easing: Easing.out(Easing.cubic), ...clamp });
-  const bo = interpolate(frame, [f(20.2), f(20.2) + 20], [0, 1], clamp);
+  const bo = interpolate(frame, [f(20.2), f(20.2) + 20, f(21.9), f(22.3)], [0, 1, 1, 0], clamp);
   return (
     <>
       {/* soft cover so that the zoomed phone never fights with the headlines */}
@@ -116,9 +117,9 @@ const Headlines: React.FC = () => {
       <Row top={170} size={108} color={TERRA}><Reveal t={15.3} out={18.3}>от 2 209 ₸</Reveal></Row>
       <Row top={300} size={44} font="KMed"><Reveal t={17.3} out={18.3}>в месяц · 12 месяцев</Reveal></Row>
       <Row top={105} size={74}>
-        <Reveal t={18.4}>Заказывайте</Reveal>
-        <Reveal t={18.9}>на</Reveal>
-        <Reveal t={19.1} style={{ color: TERRA }}>Каспи</Reveal>
+        <Reveal t={18.4} out={22.2}>Заказывайте</Reveal>
+        <Reveal t={18.9} out={22.2}>на</Reveal>
+        <Reveal t={19.1} out={22.2} style={{ color: TERRA }}>Каспи</Reveal>
       </Row>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 215, textAlign: 'center', fontFamily: 'KBold', fontSize: 52, color: INK, opacity: bo, letterSpacing: `${sp}em`, paddingLeft: `${sp}em` }}>
         ART ROOM HOME
@@ -254,7 +255,8 @@ const Phone: React.FC = () => {
   // little bounce when the finger touches the screen
   let bounce = 0;
   TAPS.forEach((tp) => { bounce += interpolate(frame, [f(tp.t), f(tp.t) + 4, f(tp.t) + 12], [0, 7, 0], clamp); });
-  const y = (1 - enter) * 900 + Math.sin(t * 1.3) * 7 + bounce;
+  const exit = ease((t - 21.75) / 0.7);
+  const y = (1 - enter) * 1500 + exit * 1500 + Math.sin(t * 1.3) * 7 + bounce;
   const ry = interpolate(t, [0, 12, 22.5], [-17, -11, -14]) * (1 - 0.8 * w);
   const rx = (4 + Math.sin(t * 0.8) * 1.2) * (1 - 0.7 * w);
   const rz = (-2.2 + Math.sin(t * 0.6) * 0.5) * (1 - 0.8 * w);
@@ -284,15 +286,17 @@ const Phone: React.FC = () => {
 
 const Background: React.FC = () => {
   const t = useCurrentFrame() / FPS;
+  const W2 = 2 * Math.PI;
   const orbs = Array.from({ length: 12 }, (_, i) => {
     const sx = (i * 197) % 1080, sy = (i * 331) % 1920;
     const r = 40 + (i % 4) * 34;
-    return { x: sx + Math.sin(t * (0.3 + i * 0.05) + i) * 60, y: (sy - t * (14 + (i % 3) * 10) + 2400) % 2000 - 40, r, o: 0.12 + (i % 3) * 0.05 };
+    const k = 1 + (i % 3), n = 1 + (i % 2);
+    return { x: sx + Math.sin((W2 * k * t) / TOTAL + i) * 60, y: ((((sy - n * 2000 * (t / TOTAL)) % 2000) + 2000) % 2000) - 40, r, o: 0.12 + (i % 3) * 0.05 };
   });
   return (
     <AbsoluteFill style={{ background: `linear-gradient(165deg,${BG_TOP} 0%,#EBD7C3 48%,#D9A388 100%)` }}>
-      <div style={{ position: 'absolute', width: 900, height: 900, borderRadius: 450, left: -240 + Math.sin(t * 0.5) * 60, top: 1000, background: 'radial-gradient(circle, rgba(255,255,255,0.65), rgba(255,255,255,0) 70%)' }} />
-      <div style={{ position: 'absolute', width: 800, height: 800, borderRadius: 400, right: -260 + Math.cos(t * 0.45) * 60, top: 300, background: 'radial-gradient(circle, rgba(194,85,58,0.28), rgba(194,85,58,0) 70%)' }} />
+      <div style={{ position: 'absolute', width: 900, height: 900, borderRadius: 450, left: -240 + Math.sin((W2 * t) / TOTAL) * 60, top: 1000, background: 'radial-gradient(circle, rgba(255,255,255,0.65), rgba(255,255,255,0) 70%)' }} />
+      <div style={{ position: 'absolute', width: 800, height: 800, borderRadius: 400, right: -260 + Math.cos((W2 * t) / TOTAL) * 60, top: 300, background: 'radial-gradient(circle, rgba(194,85,58,0.28), rgba(194,85,58,0) 70%)' }} />
       {orbs.map((o, i) => (
         <div key={i} style={{ position: 'absolute', left: o.x - o.r, top: o.y - o.r, width: o.r * 2, height: o.r * 2, borderRadius: o.r, background: `radial-gradient(circle, rgba(255,255,255,${o.o + 0.15}), rgba(255,255,255,0) 70%)` }} />
       ))}
